@@ -18,7 +18,9 @@ namespace Ode2Mvc4.Controllers
         }
 
         //5. specify http verb
-        [HttpPost]
+        //[HttpGet]
+        // 6. use authotize
+        //[Authorize
         public ActionResult Search(string name)
         {
             //var controller = RouteData.Values["controller"];
