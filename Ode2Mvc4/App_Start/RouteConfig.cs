@@ -12,6 +12,19 @@ namespace Ode2Mvc4
         public static void RegisterRoutes(RouteCollection routes)
         {
             routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
+            // place more restrictive routes above less restrictive routes
+
+            routes.MapRoute(
+                "Food",
+                "fd/{name}",
+                new { controller = "Fd", action = "Search", name = UrlParameter.Optional }
+            );
+
+            routes.MapRoute(
+                "Cuisine",
+                "cuisine/{name}",
+                new { controller = "Cuisine", action = "Search", name = UrlParameter.Optional }
+            );
 
             routes.MapRoute(
                 name: "Default",

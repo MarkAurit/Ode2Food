@@ -6,10 +6,10 @@ using System.Web.Mvc;
 
 namespace Ode2Mvc4.Controllers
 {
-    public class CuisineController : Controller
+    public class fdController : Controller
     {
         //
-        // GET: /Cuisine/
+        // GET: /fd/
 
         public ActionResult Index()
         {
