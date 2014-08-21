@@ -4,9 +4,11 @@ using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using System.Web.Routing;
+using Ode2Mvc4.Filters;
 
 namespace Ode2Mvc4.Controllers
 {
+    [Log]
     public class fdController : Controller
     {
         //
