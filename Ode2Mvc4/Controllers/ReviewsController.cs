@@ -74,16 +74,14 @@ namespace Ode2Mvc4.Controllers
         [HttpPost]
         public ActionResult Edit(int id, FormCollection collection)
         {
-            try
+            var review = _reviews.Single(r => r.ID == id);
+            // bind model
+            if (TryUpdateModel(review))
             {
-                // TODO: Add update logic here
-
                 return RedirectToAction("Index");
             }
-            catch
-            {
-                return View();
-            }
+            // failed, give form with user to fix
+            return View(review);
         }
 
         //

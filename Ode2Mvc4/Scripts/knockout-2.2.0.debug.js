@@ -103,11 +103,11 @@ ko.utils = new (function () {
                 action(array[i]);
         },
 
-        arrayIndexOf: function (array, item) {
+        arrayIndexOf: function (array, Model) {
             if (typeof Array.prototype.indexOf == "function")
-                return Array.prototype.indexOf.call(array, item);
+                return Array.prototype.indexOf.call(array, Model);
             for (var i = 0, j = array.length; i < j; i++)
-                if (array[i] === item)
+                if (array[i] === Model)
                     return i;
             return -1;
         },
@@ -119,8 +119,8 @@ ko.utils = new (function () {
             return null;
         },
 
-        arrayRemoveItem: function (array, itemToRemove) {
-            var index = ko.utils.arrayIndexOf(array, itemToRemove);
+        arrayRemoveModel: function (array, ModelToRemove) {
+            var index = ko.utils.arrayIndexOf(array, ModelToRemove);
             if (index >= 0)
                 array.splice(index, 1);
         },
@@ -513,7 +513,7 @@ ko.exportSymbol('utils.arrayGetDistinctValues', ko.utils.arrayGetDistinctValues)
 ko.exportSymbol('utils.arrayIndexOf', ko.utils.arrayIndexOf);
 ko.exportSymbol('utils.arrayMap', ko.utils.arrayMap);
 ko.exportSymbol('utils.arrayPushAll', ko.utils.arrayPushAll);
-ko.exportSymbol('utils.arrayRemoveItem', ko.utils.arrayRemoveItem);
+ko.exportSymbol('utils.arrayRemoveModel', ko.utils.arrayRemoveModel);
 ko.exportSymbol('utils.extend', ko.utils.extend);
 ko.exportSymbol('utils.fieldsIncludedWithJsonPost', ko.utils.fieldsIncludedWithJsonPost);
 ko.exportSymbol('utils.getFormFields', ko.utils.getFormFields);
@@ -642,7 +642,7 @@ ko.utils.domNodeDisposal = new (function () {
         removeDisposeCallback : function(node, callback) {
             var callbacksCollection = getDisposeCallbacksCollection(node, false);
             if (callbacksCollection) {
-                ko.utils.arrayRemoveItem(callbacksCollection, callback);
+                ko.utils.arrayRemoveModel(callbacksCollection, callback);
                 if (callbacksCollection.length == 0)
                     destroyCallbacksCollection(node);
             }
@@ -910,7 +910,7 @@ ko.subscribable['fn'] = {
         var boundCallback = callbackTarget ? callback.bind(callbackTarget) : callback;
 
         var subscription = new ko.subscription(this, boundCallback, function () {
-            ko.utils.arrayRemoveItem(this._subscriptions[event], subscription);
+            ko.utils.arrayRemoveModel(this._subscriptions[event], subscription);
         }.bind(this));
 
         if (!this._subscriptions[event])
@@ -1137,16 +1137,16 @@ ko.observableArray['fn'] = {
         });
     },
 
-    'indexOf': function (item) {
+    'indexOf': function (Model) {
         var underlyingArray = this();
-        return ko.utils.arrayIndexOf(underlyingArray, item);
+        return ko.utils.arrayIndexOf(underlyingArray, Model);
     },
 
-    'replace': function(oldItem, newItem) {
-        var index = this['indexOf'](oldItem);
+    'replace': function(oldModel, newModel) {
+        var index = this['indexOf'](oldModel);
         if (index >= 0) {
             this.valueWillMutate();
-            this.peek()[index] = newItem;
+            this.peek()[index] = newModel;
             this.valueHasMutated();
         }
     }
@@ -1236,7 +1236,7 @@ ko.dependentObservable = function (evaluatorFunctionOrOptions, evaluatorFunction
         try {
             // Initially, we assume that none of the subscriptions are still being used (i.e., all are candidates for disposal).
             // Then, during evaluation, we cross off any that are in fact still being used.
-            var disposalCandidates = ko.utils.arrayMap(_subscriptionsToDependencies, function(item) {return item.target;});
+            var disposalCandidates = ko.utils.arrayMap(_subscriptionsToDependencies, function(Model) {return Model.target;});
 
             ko.dependencyDetection.begin(function(subscribable) {
                 var inOld;
@@ -1968,7 +1968,7 @@ ko.exportSymbol('bindingProvider', ko.bindingProvider);
 (function () {
     ko.bindingHandlers = {};
 
-    ko.bindingContext = function(dataItem, parentBindingContext, dataItemAlias) {
+    ko.bindingContext = function(dataModel, parentBindingContext, dataModelAlias) {
         if (parentBindingContext) {
             ko.utils.extend(this, parentBindingContext); // Inherit $root and any custom properties
             this['$parentContext'] = parentBindingContext;
@@ -1977,18 +1977,18 @@ ko.exportSymbol('bindingProvider', ko.bindingProvider);
             this['$parents'].unshift(this['$parent']);
         } else {
             this['$parents'] = [];
-            this['$root'] = dataItem;
+            this['$root'] = dataModel;
             // Export 'ko' in the binding context so it will be available in bindings and templates
             // even if 'ko' isn't exported as a global, such as when using an AMD loader.
             // See https://github.com/SteveSanderson/knockout/issues/490
             this['ko'] = ko;
         }
-        this['$data'] = dataItem;
-        if (dataItemAlias)
-            this[dataItemAlias] = dataItem;
+        this['$data'] = dataModel;
+        if (dataModelAlias)
+            this[dataModelAlias] = dataModel;
     }
-    ko.bindingContext.prototype['createChildContext'] = function (dataItem, dataItemAlias) {
-        return new ko.bindingContext(dataItem, this, dataItemAlias);
+    ko.bindingContext.prototype['createChildContext'] = function (dataModel, dataModelAlias) {
+        return new ko.bindingContext(dataModel, this, dataModelAlias);
     };
     ko.bindingContext.prototype['extend'] = function(properties) {
         var clone = ko.utils.extend(new ko.bindingContext(), this);
@@ -2523,7 +2523,7 @@ ko.bindingHandlers['options'] = {
             }
 
             for (var i = 0, j = value.length; i < j; i++) {
-                // Skip destroyed items
+                // Skip destroyed Models
                 var arrayEntry = value[i];
                 if (arrayEntry && arrayEntry['_destroy'] && !includeDestroyed)
                     continue;
@@ -2980,7 +2980,7 @@ ko.exportSymbol('__tr_ambtns', ko.templateRewriting.applyMemoizedBindingsToNextS
     function activateBindingsOnContinuousNodeArray(continuousNodeArray, bindingContext) {
         // To be used on any nodes that have been rendered by a template and have been inserted into some parent element
         // Walks through continuousNodeArray (which *must* be continuous, i.e., an uninterrupted sequence of sibling nodes, because
-        // the algorithm for walking them relies on this), and for each top-level item in the virtual-element sense,
+        // the algorithm for walking them relies on this), and for each top-level Model in the virtual-element sense,
         // (1) Does a regular "applyBindings" to associate bindingContext with this node and to activate any non-memoized bindings
         // (2) Unmemoizes any memos in the DOM subtree (e.g., to activate bindings that had been memoized during template rewriting)
 
@@ -3080,22 +3080,22 @@ ko.exportSymbol('__tr_ambtns', ko.templateRewriting.applyMemoizedBindingsToNextS
     };
 
     ko.renderTemplateForEach = function (template, arrayOrObservableArray, options, targetNode, parentBindingContext) {
-        // Since setDomNodeChildrenFromArrayMapping always calls executeTemplateForArrayItem and then
-        // activateBindingsCallback for added items, we can store the binding context in the former to use in the latter.
-        var arrayItemContext;
+        // Since setDomNodeChildrenFromArrayMapping always calls executeTemplateForArrayModel and then
+        // activateBindingsCallback for added Models, we can store the binding context in the former to use in the latter.
+        var arrayModelContext;
 
         // This will be called by setDomNodeChildrenFromArrayMapping to get the nodes to add to targetNode
-        var executeTemplateForArrayItem = function (arrayValue, index) {
+        var executeTemplateForArrayModel = function (arrayValue, index) {
             // Support selecting template as a function of the data being rendered
-            arrayItemContext = parentBindingContext['createChildContext'](ko.utils.unwrapObservable(arrayValue), options['as']);
-            arrayItemContext['$index'] = index;
-            var templateName = typeof(template) == 'function' ? template(arrayValue, arrayItemContext) : template;
-            return executeTemplate(null, "ignoreTargetNode", templateName, arrayItemContext, options);
+            arrayModelContext = parentBindingContext['createChildContext'](ko.utils.unwrapObservable(arrayValue), options['as']);
+            arrayModelContext['$index'] = index;
+            var templateName = typeof(template) == 'function' ? template(arrayValue, arrayModelContext) : template;
+            return executeTemplate(null, "ignoreTargetNode", templateName, arrayModelContext, options);
         }
 
         // This will be called whenever setDomNodeChildrenFromArrayMapping has added nodes to targetNode
         var activateBindingsCallback = function(arrayValue, addedNodesArray, index) {
-            activateBindingsOnContinuousNodeArray(addedNodesArray, arrayItemContext);
+            activateBindingsOnContinuousNodeArray(addedNodesArray, arrayModelContext);
             if (options['afterRender'])
                 options['afterRender'](addedNodesArray, arrayValue);
         };
@@ -3106,13 +3106,13 @@ ko.exportSymbol('__tr_ambtns', ko.templateRewriting.applyMemoizedBindingsToNextS
                 unwrappedArray = [unwrappedArray];
 
             // Filter out any entries marked as destroyed
-            var filteredArray = ko.utils.arrayFilter(unwrappedArray, function(item) {
-                return options['includeDestroyed'] || item === undefined || item === null || !ko.utils.unwrapObservable(item['_destroy']);
+            var filteredArray = ko.utils.arrayFilter(unwrappedArray, function(Model) {
+                return options['includeDestroyed'] || Model === undefined || Model === null || !ko.utils.unwrapObservable(Model['_destroy']);
             });
 
             // Call setDomNodeChildrenFromArrayMapping, ignoring any observables unwrapped within (most likely from a callback function).
-            // If the array items are observables, though, they will be unwrapped in executeTemplateForArrayItem and managed within setDomNodeChildrenFromArrayMapping.
-            ko.dependencyDetection.ignore(ko.utils.setDomNodeChildrenFromArrayMapping, null, [targetNode, filteredArray, executeTemplateForArrayItem, options, activateBindingsCallback]);
+            // If the array Models are observables, though, they will be unwrapped in executeTemplateForArrayModel and managed within setDomNodeChildrenFromArrayMapping.
+            ko.dependencyDetection.ignore(ko.utils.setDomNodeChildrenFromArrayMapping, null, [targetNode, filteredArray, executeTemplateForArrayModel, options, activateBindingsCallback]);
 
         }, null, { disposeWhenNodeIsRemoved: targetNode });
     };
@@ -3264,14 +3264,14 @@ ko.utils.compareArrays = (function () {
             // Set a limit on the number of consecutive non-matching comparisons; having it a multiple of
             // smlIndexMax keeps the time complexity of this algorithm linear.
             var limitFailedCompares = smlIndexMax * 10, failedCompares,
-                a, d, notInSmlItem, notInBigItem;
-            // Go through the items that have been added and deleted and try to find matches between them.
-            for (failedCompares = a = 0; (dontLimitMoves || failedCompares < limitFailedCompares) && (notInSmlItem = notInSml[a]); a++) {
-                for (d = 0; notInBigItem = notInBig[d]; d++) {
-                    if (notInSmlItem['value'] === notInBigItem['value']) {
-                        notInSmlItem['moved'] = notInBigItem['index'];
-                        notInBigItem['moved'] = notInSmlItem['index'];
-                        notInBig.splice(d,1);       // This item is marked as moved; so remove it from notInBig list
+                a, d, notInSmlModel, notInBigModel;
+            // Go through the Models that have been added and deleted and try to find matches between them.
+            for (failedCompares = a = 0; (dontLimitMoves || failedCompares < limitFailedCompares) && (notInSmlModel = notInSml[a]); a++) {
+                for (d = 0; notInBigModel = notInBig[d]; d++) {
+                    if (notInSmlModel['value'] === notInBigModel['value']) {
+                        notInSmlModel['moved'] = notInBigModel['index'];
+                        notInBigModel['moved'] = notInSmlModel['index'];
+                        notInBig.splice(d,1);       // This Model is marked as moved; so remove it from notInBig list
                         failedCompares = d = 0;     // Reset failed compares count because we're checking for consecutive failures
                         break;
                     }
@@ -3372,38 +3372,38 @@ ko.exportSymbol('utils.compareArrays', ko.utils.compareArrays);
         var newMappingResultIndex = 0;
 
         var nodesToDelete = [];
-        var itemsToProcess = [];
-        var itemsForBeforeRemoveCallbacks = [];
-        var itemsForMoveCallbacks = [];
-        var itemsForAfterAddCallbacks = [];
+        var ModelsToProcess = [];
+        var ModelsForBeforeRemoveCallbacks = [];
+        var ModelsForMoveCallbacks = [];
+        var ModelsForAfterAddCallbacks = [];
         var mapData;
 
-        function itemMovedOrRetained(editScriptIndex, oldPosition) {
+        function ModelMovedOrRetained(editScriptIndex, oldPosition) {
             mapData = lastMappingResult[oldPosition];
             if (newMappingResultIndex !== oldPosition)
-                itemsForMoveCallbacks[editScriptIndex] = mapData;
+                ModelsForMoveCallbacks[editScriptIndex] = mapData;
             // Since updating the index might change the nodes, do so before calling fixUpNodesToBeMovedOrRemoved
             mapData.indexObservable(newMappingResultIndex++);
             fixUpNodesToBeMovedOrRemoved(mapData.mappedNodes);
             newMappingResult.push(mapData);
-            itemsToProcess.push(mapData);
+            ModelsToProcess.push(mapData);
         }
 
-        function callCallback(callback, items) {
+        function callCallback(callback, Models) {
             if (callback) {
-                for (var i = 0, n = items.length; i < n; i++) {
-                    if (items[i]) {
-                        ko.utils.arrayForEach(items[i].mappedNodes, function(node) {
-                            callback(node, i, items[i].arrayEntry);
+                for (var i = 0, n = Models.length; i < n; i++) {
+                    if (Models[i]) {
+                        ko.utils.arrayForEach(Models[i].mappedNodes, function(node) {
+                            callback(node, i, Models[i].arrayEntry);
                         });
                     }
                 }
             }
         }
 
-        for (var i = 0, editScriptItem, movedIndex; editScriptItem = editScript[i]; i++) {
-            movedIndex = editScriptItem['moved'];
-            switch (editScriptItem['status']) {
+        for (var i = 0, editScriptModel, movedIndex; editScriptModel = editScript[i]; i++) {
+            movedIndex = editScriptModel['moved'];
+            switch (editScriptModel['status']) {
                 case "deleted":
                     if (movedIndex === undefined) {
                         mapData = lastMappingResult[lastMappingResultIndex];
@@ -3415,40 +3415,40 @@ ko.exportSymbol('utils.compareArrays', ko.utils.compareArrays);
                         // Queue these nodes for later removal
                         nodesToDelete.push.apply(nodesToDelete, fixUpNodesToBeMovedOrRemoved(mapData.mappedNodes));
                         if (options['beforeRemove']) {
-                            itemsForBeforeRemoveCallbacks[i] = mapData;
-                            itemsToProcess.push(mapData);
+                            ModelsForBeforeRemoveCallbacks[i] = mapData;
+                            ModelsToProcess.push(mapData);
                         }
                     }
                     lastMappingResultIndex++;
                     break;
 
                 case "retained":
-                    itemMovedOrRetained(i, lastMappingResultIndex++);
+                    ModelMovedOrRetained(i, lastMappingResultIndex++);
                     break;
 
                 case "added":
                     if (movedIndex !== undefined) {
-                        itemMovedOrRetained(i, movedIndex);
+                        ModelMovedOrRetained(i, movedIndex);
                     } else {
-                        mapData = { arrayEntry: editScriptItem['value'], indexObservable: ko.observable(newMappingResultIndex++) };
+                        mapData = { arrayEntry: editScriptModel['value'], indexObservable: ko.observable(newMappingResultIndex++) };
                         newMappingResult.push(mapData);
-                        itemsToProcess.push(mapData);
+                        ModelsToProcess.push(mapData);
                         if (!isFirstExecution)
-                            itemsForAfterAddCallbacks[i] = mapData;
+                            ModelsForAfterAddCallbacks[i] = mapData;
                     }
                     break;
             }
         }
 
         // Call beforeMove first before any changes have been made to the DOM
-        callCallback(options['beforeMove'], itemsForMoveCallbacks);
+        callCallback(options['beforeMove'], ModelsForMoveCallbacks);
 
-        // Next remove nodes for deleted items (or just clean if there's a beforeRemove callback)
+        // Next remove nodes for deleted Models (or just clean if there's a beforeRemove callback)
         ko.utils.arrayForEach(nodesToDelete, options['beforeRemove'] ? ko.cleanNode : ko.removeNode);
 
-        // Next add/reorder the remaining items (will include deleted items if there's a beforeRemove callback)
-        for (var i = 0, nextNode = ko.virtualElements.firstChild(domNode), lastNode, node; mapData = itemsToProcess[i]; i++) {
-            // Get nodes for newly added items
+        // Next add/reorder the remaining Models (will include deleted Models if there's a beforeRemove callback)
+        for (var i = 0, nextNode = ko.virtualElements.firstChild(domNode), lastNode, node; mapData = ModelsToProcess[i]; i++) {
+            // Get nodes for newly added Models
             if (!mapData.mappedNodes)
                 ko.utils.extend(mapData, mapNodeAndRefreshWhenChanged(domNode, mapping, mapData.arrayEntry, callbackAfterAddingNodes, mapData.indexObservable));
 
@@ -3470,13 +3470,13 @@ ko.exportSymbol('utils.compareArrays', ko.utils.compareArrays);
         // some sort of animation, which is why we first reorder the nodes that will be removed. If the
         // callback instead removes the nodes right away, it would be more efficient to skip reordering them.
         // Perhaps we'll make that change in the future if this scenario becomes more common.
-        callCallback(options['beforeRemove'], itemsForBeforeRemoveCallbacks);
+        callCallback(options['beforeRemove'], ModelsForBeforeRemoveCallbacks);
 
         // Finally call afterMove and afterAdd callbacks
-        callCallback(options['afterMove'], itemsForMoveCallbacks);
-        callCallback(options['afterAdd'], itemsForAfterAddCallbacks);
+        callCallback(options['afterMove'], ModelsForMoveCallbacks);
+        callCallback(options['afterAdd'], ModelsForAfterAddCallbacks);
 
-        // Store a copy of the array items we just considered so we can difference it next time
+        // Store a copy of the array Models we just considered so we can difference it next time
         ko.utils.domData.set(domNode, lastMappingResultDomDataKey, newMappingResult);
     }
 })();
@@ -3542,7 +3542,7 @@ ko.exportSymbol('nativeTemplateEngine', ko.nativeTemplateEngine);
             if (!precompiled) {
                 var templateText = templateSource['text']() || "";
                 // Wrap in "with($whatever.koBindingContext) { ... }"
-                templateText = "{{ko_with $item.koBindingContext}}" + templateText + "{{/ko_with}}";
+                templateText = "{{ko_with $Model.koBindingContext}}" + templateText + "{{/ko_with}}";
 
                 precompiled = jQuery['template'](null, templateText);
                 templateSource['data']('precompiled', precompiled);

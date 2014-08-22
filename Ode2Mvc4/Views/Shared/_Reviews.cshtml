@@ -1,0 +1,12 @@
+﻿@model Ode2Mvc4.Models.RestaurantReview
+
+<div>
+    <h4>@Model.Name</h4>
+    <span>Rating @Model.Rating</span>
+    <p>@Model.City, @Model.Country</p>
+
+    <span>
+        @Html.ActionLink("Edit", "Edit", new { id = Model.ID })
+    </span>
+</div>
+

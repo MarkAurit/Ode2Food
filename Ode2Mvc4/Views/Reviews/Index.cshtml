@@ -15,21 +15,15 @@
 <h2>Index</h2>
 <h5>We are showing the latest @Model.Count() reviews</h5>
 
+@foreach (var item in Model)
+{
+    @Html.Partial("_Reviews", item)
+}
+
 <p>
     @Html.ActionLink("Create New", "Create") 
 </p>
 
-@foreach (var item in Model) {
-    @:Whatever
-    <div>
-        <h4>@item.Name</h4>
-        <span>Rating @item.Rating</span>
-        <p>@item.City, @item.Country</p>
-        
-        <span>
-            @Html.ActionLink("Edit", "Edit", new { id = item.ID})
-        </span>
-    </div>
-}
+
 
 
