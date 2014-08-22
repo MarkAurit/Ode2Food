@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Web;
 using System.Web.Mvc;
 using Ode2Mvc4.Models;
@@ -12,6 +13,18 @@ namespace Ode2Mvc4.Controllers
         //
         // GET: /Reviews/
         private readonly IEnumerable<RestaurantReview> _reviews= RestaurantReview.GetReviews();
+
+        // add attribute making this not browser addressable
+        [ChildActionOnly]
+        public ActionResult BestReview()
+        {
+            var bestReview = from r in _reviews
+                orderby r.Rating descending
+                select r;
+
+            return PartialView("_Reviews", bestReview.First());
+
+        }
 
         public ActionResult Index() 
         {
