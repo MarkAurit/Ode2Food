@@ -11,13 +11,14 @@ namespace Ode2Mvc4.Controllers
     {
         //
         // GET: /Reviews/
+        private readonly IEnumerable<RestaurantReview> _reviews= RestaurantReview.GetReviews();
 
         public ActionResult Index() 
         {
-            //List<RestaurantReview> reviews = RestaurantReview.GetReviews();
-            IEnumerable<RestaurantReview> reviews = RestaurantReview.GetReviews();
+            //List<RestaurantReview> _reviews = RestaurantReview.GetReviews();
+            //_reviews = RestaurantReview.GetReviews();
             var model =
-                from r in reviews
+                from r in _reviews
                 orderby r.Rating
                 select r;
             return View(model);
@@ -62,7 +63,9 @@ namespace Ode2Mvc4.Controllers
 
         public ActionResult Edit(int id)
         {
-            return View();
+            var review = _reviews.Single(r => r.ID == id);
+            //return View();
+            return View(review);
         }
 
         //

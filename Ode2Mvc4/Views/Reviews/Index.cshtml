@@ -25,6 +25,10 @@
         <h4>@item.Name</h4>
         <span>Rating @item.Rating</span>
         <p>@item.City, @item.Country</p>
+        
+        <span>
+            @Html.ActionLink("Edit", "Edit", new { id = item.ID})
+        </span>
     </div>
 }
 
