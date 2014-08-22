@@ -2,6 +2,14 @@
 
 @{
     ViewBag.Title = "Index";
+    // below overrides _ViewStart
+    //Layout = null;
+}
+
+@section featured {
+    <div>
+        @DateTime.Now.ToShortDateString()
+    </div>
 }
 
 <h2>Index</h2>
